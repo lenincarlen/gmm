@@ -1,0 +1,924 @@
+swagger: '2.0'
+
+info:
+  version: "1.0.0"
+  title: Afrikinvest.net API
+
+basePath: /api/v1
+paths:
+  /health:
+    get:
+      description: |
+        Retrieve the health status of the API
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+            example:   # Sample object
+              message: 'Server is up and running !!'
+        500:
+          description: Dependencies are not healthy
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:   # Sample object
+              errorMessage: "MongoDB isn't connected"
+  /sign-up:
+    post:
+      description: |
+        User registration request. User would receive an email to confirm his/her account for activation.
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+
+        500:
+          description: Server Error response
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: You have already signed up. Please check your email to verify your account.
+
+        400:
+          description: Validation error
+          schema:
+            $ref: '#/definitions/Error'
+  /resend-email:
+    post:
+      description: |
+        User can request to resend verification email confirm to his/her email account.
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+          - email
+          properties:
+            email:
+              type: string
+          example:   # Sample object
+            email: firstname.lastname@gmail.com
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+
+        500:
+          description: Server Error response
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: user not found for email-id provided
+
+        400:
+          description: Validation error
+          schema:
+            $ref: '#/definitions/Error'
+  /email-verification/{id}:
+    get:
+      description: |
+        This service does the email account verification and activates the user.
+      parameters:
+      - in: path
+        name: id
+        type: string
+        required: true
+        description: ID of the user to verify the email account
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+            example:   # Sample object
+              message: 'Successfully confirmed the User Email Account !!'
+        400:
+          description: Valiation Error
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Invalid/Expired Verification Id
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:   # Sample object
+              errorMessage: "Invalid/Expired Verification Id"
+
+  /login:
+    post:
+      description: |
+        User login with email and password.
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+          - email
+          - password
+          properties:
+            email:
+              type: string
+            password:
+              type: string
+          example:   # Sample object
+            email: firstname.lastname@gmail.com
+            password: superpass
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+              expiresInSec:
+                type: number
+              email:
+                type: string
+            example:   # Sample object
+              email: firstname.lastname@gmail.com
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImZpcnN0bmFtZS5sYXN0bmFtZUBnbWFpbC5jb20iLCJ0aW1lc3RhbXAiOjE1NDM4MDcyMzE2ODcsImlhdCI6MTU0MzgwNzIzMSwiZXhwIjoxNTQzODA3ODMxfQ.EoZWV5eQjiT5eP-eUn3Sqx5UqWDjyj83qVD5ityD9t0
+              expiresInSec: 600
+
+        401:
+          description: Unauthenticated User
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: invalid credentials
+
+        500:
+          description: Server Error response
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: user not found for email-id provided
+
+        400:
+          description: Valiation Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /validate-token:
+    get:
+      description: |
+        Validates the user token.
+      parameters:
+      - in: header
+        name: Authorization
+        type: string
+        required: true
+        description: User token
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              iat:
+                type: string
+              exp:
+                type: string
+            example:   # Sample object
+              email: firstname.lastname@gmail.com
+              iat: 1543807231
+              exp: 1543807831
+
+        400:
+          description: Valiation Error
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Invalid/Expired Token
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:   # Sample object
+              errorMessage: "jwt expired"
+
+  /refresh-token:
+    get:
+      description: |
+        Validates the user token and responds with new token.
+      parameters:
+      - in: header
+        name: Authorization
+        type: string
+        required: true
+        description: User token
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+              expiresInSec:
+                type: number
+              email:
+                type: string
+            example:   # Sample object
+              email: firstname.lastname@gmail.com
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImZpcnN0bmFtZS5sYXN0bmFtZUBnbWFpbC5jb20iLCJ0aW1lc3RhbXAiOjE1NDM4MDcyMzE2ODcsImlhdCI6MTU0MzgwNzIzMSwiZXhwIjoxNTQzODA3ODMxfQ.EoZWV5eQjiT5eP-eUn3Sqx5UqWDjyj83qVD5ityD9t0
+              expiresInSec: 600
+
+        400:
+          description: Valiation Error
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Invalid/Expired Token
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:   # Sample object
+              errorMessage: "jwt expired"
+
+  /reset-password:
+      post:
+        description: |
+          Send request url to your email address.
+        parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required:
+            - email
+            properties:
+              email:
+                type: string
+            example:   # Sample object
+              email: firstname.lastname@gmail.com
+        responses:
+          200:
+            description: Successful response
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+              example:   # Sample object
+                message: please confirm your email account
+
+          401:
+            description: Unauthenticated User
+            schema:
+              type: object
+              properties:
+                errorMessage:
+                  type: string
+              example:
+                errorMessage: user with given email doesn't exist
+
+          500:
+            description: Server Error response
+            schema:
+              type: object
+              properties:
+                errorMessage:
+                  type: string
+              example:
+                errorMessage: user not found for email-id provided
+
+          400:
+            description: Valiation Error
+            schema:
+              $ref: '#/definitions/Error'
+  /reset-password/{userID}/{token}:
+        post:
+          description: |
+            Reset Password.
+          parameters:
+          - in: path
+            name: userID
+            type: string
+            required: true
+            description: ID of the user to verify the email account to reset password
+          - in: path
+            name: token
+            type: string
+            required: true
+            description: token of the user to verify the email account to reset password
+          - in: body
+            name: body
+            required: true
+            schema:
+              type: object
+              required:
+              - password
+              properties:
+                password:
+                  type: string
+              example:   # Sample object
+                password: 123456
+          responses:
+            200:
+              description: Successful response
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:   # Sample object
+                  message: password reset sucessfully.
+
+            400:
+              description: Unauthenticated User
+              schema:
+                type: object
+                properties:
+                  errorMessage:
+                    type: string
+                example:
+                  errorMessage: Invalid link or expired
+
+            500:
+              description: Server Error response
+              schema:
+                type: object
+                properties:
+                  errorMessage:
+                    type: string
+                example:
+                  errorMessage: An error occured
+  /realestate/currency:
+        get:
+          description: |
+            Get coin market history of previous 3 month(Bitcoin, Ethereum, Tether, USD_Coin, BNB).
+          parameters:
+          - in: query
+            name: crypto
+            type: string
+            required: true
+            description: parameter candidate - bitcoin, ethereum, tether, usd-coin, binancecoin
+            example:   # Sample object
+               crypto: bitcoin
+          responses:
+            200:
+              description: Successful response
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+            404:
+              description: Coingecko not avaiable
+              schema:
+                type: object
+                properties:
+                  errorMessage:
+                    type: string
+                example:
+                  errorMessage: coingecko not available
+
+            400:
+              description: Server Error response
+              schema:
+                type: object
+                properties:
+                  errorMessage:
+                    type: string
+                example:
+                  errorMessage: Invalid details provided.
+  /realestate:
+    get:
+      description: |
+        Get realestate data from database.
+      parameters:
+      - in: query
+        name: page
+        type: number
+        description: pagenumber of realestates. ex - 3
+      - in: query
+        name: size
+        type: number
+        description: one page display size. ex - 12
+      - in: query
+        name: filter
+        type: string
+        description: filter with amenity. ex - POOL,SECURITY
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+
+        404:
+          description: no realestate data
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: realEstates not available
+
+        400:
+          description: Server Error response
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: Invalid details provided.
+  /realestate/count:
+      get:
+        description: |
+          Get count of realestate data from database.
+        parameters:
+        - in: query
+          name: filter
+          type: string
+          description: filter with amenity. ex - POOL,SECURITY
+        responses:
+          200:
+            description: Successful response
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+              example:
+               count: 39
+
+          404:
+            description: no realestate data
+            schema:
+              type: object
+              properties:
+                errorMessage:
+                  type: string
+              example:
+                errorMessage: realEstates not available
+
+          400:
+            description: Server Error response
+            schema:
+              type: object
+              properties:
+                errorMessage:
+                  type: string
+              example:
+                errorMessage: Invalid details provided.     
+
+  /realestate/{ID}:
+      get:
+        description: |
+          Get one realestate detail from database using ID.
+        parameters:
+        - in: path
+          name: ID
+          type: string
+          required: true
+          description: ID of realestate. ex - 631c900d4426f5f81cd34e81
+        responses:
+          200:
+            description: Successful response
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+
+          404:
+            description: no realestate data
+            schema:
+              type: object
+              properties:
+                errorMessage:
+                  type: string
+              example:
+                errorMessage: realEstates not available
+
+          400:
+            description: Server Error response
+            schema:
+              type: object
+              properties:
+                errorMessage:
+                  type: string
+              example:
+                errorMessage: Invalid details provided.
+  /user/setfavourite:
+    post:
+      description: |
+        set favourite or unset favourite. if set, will unset and if unset, will set.
+      parameters:
+      - in: header
+        name: Authorization
+        type: string
+        required: true
+        description: User token
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+          - email
+          - propertyID
+          properties:
+            email:
+              type: string
+            propertyID:
+              type: string
+          example:   # Sample object
+            email: firstname.lastname@gmail.com
+            propertyID: 6321964426ef1084538c0670
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+            example:   # Sample object
+              message: success
+
+        401:
+          description: Unauthenticated User
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: invalid credentials
+        404:
+          description: Invailid Property
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: invalid property
+        400:
+          description: Valiation Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /user/getfavourite:
+    post:
+      description: |
+        get User's favourite realestate
+      parameters:
+      - in: header
+        name: Authorization
+        type: string
+        required: true
+        description: User token
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+          - email
+          properties:
+            email:
+              type: string
+          example:   # Sample object
+            email: firstname.lastname@gmail.com
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              favouriteData:
+                type: string
+
+        401:
+          description: Invalid User
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: invalid email
+        400:
+          description: Unauthenticated User
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: invalid credentials
+  /contact:
+    post:
+      description: |
+        send client's message to server
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/Contact'
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              message: success sent message
+
+        401:
+          description: Invalid User
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: invalid email
+        400:
+          description: Unauthenticated User
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: invalid credentials
+  /subscribe:
+    post:
+      description: |
+        subscribe with email
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+          - email
+          properties:
+            email:
+              type: string
+          example:   # Sample object
+            email: firstname.lastname@gmail.com
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              message: success subscribed
+
+        401:
+          description: Already subscribed
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: already you've subscribed
+        400:
+          description: Server Error response
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: server error occured
+  /search:
+    get:
+      description: |
+        Search realestates with region, zip, price
+      parameters:
+      - in: query
+        name: keyword
+        type: string
+        required: true
+        description: parameter candidate - Maroc(Country) , Marrakech(City), 7000000(Price) just only one parameter allow 
+        example:   # Sample object
+            keyword: 7000000
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+
+        404:
+          description: RealEstates not available
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: realEstates not available
+
+        400:
+          description: Server Error response
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: Invalid details provided.
+  /gettypecount:
+    get:
+      description: |
+        Get Property list and Count by group
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              results:
+                type: string
+
+        404:
+          description: RealEstates not available
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: realEstates not available
+
+        400:
+          description: Server Error response
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: Invalid details provided.
+  /search:
+    get:
+      description: |
+        Search realestates with region, zip, price
+      parameters:
+      - in: query
+        name: keyword
+        type: string
+        required: true
+        description: parameter candidate - Maroc(Country) , Marrakech(City), 7000000(Price) just only one parameter allow 
+        example:   # Sample object
+            keyword: 7000000
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+
+        404:
+          description: RealEstates not available
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: realEstates not available
+
+        400:
+          description: Server Error response
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+            example:
+              errorMessage: Invalid details provided.
+definitions:
+  User:
+    type: object
+    required:
+    - fullName
+    - country
+    - email
+    - password
+    properties:
+      fullName:
+        type: string
+      country:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+    example:   # Sample object
+      fullName: fullName
+      country: country
+      email: firstname.lastname@gmail.com
+      password: superpass
+  Contact:
+      type: object
+      required:
+      - name
+      - phone
+      - email
+      - message
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        message:
+          type: string
+      example:   # Sample object
+        name: fullName
+        phone: +1-123456789
+        email: firstname.lastname@gmail.com
+        message: hello
+  Error:
+    type: object
+    required:
+    - errors
+    properties:
+      errors:
+        type: array
+        items:
+          $ref: '#/definitions/ErrorDetails'
+
+
+  ErrorDetails:
+    type: object
+    properties:
+      location:
+        type: string
+      param:
+        type: string
+      msg:
+        type: string
+      value:
+        type: string
